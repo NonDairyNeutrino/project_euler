@@ -4,6 +4,10 @@ Project Euler Problem 4: Largest Palindrome Product
 Find the largest palindrome made from the product of two 3-digit numbers.
 
 What does this code do?
+1. Use the Kronecker product of the domain with itself
+2. Test if each number is a palindrome, giving a boolean vector
+3. Use the boolean vector to logically index the Kronecker vector
+4. Pick out the maxumum
 =#
 
 """
