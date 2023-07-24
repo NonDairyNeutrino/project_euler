@@ -4,6 +4,104 @@ Problem 11: Largest Product in a Grid
 What is the greatest product of four adjacent numbers in the same direction (up, down, left, right, or diagonally) in the 20x20 grid
 =#
 
+import LinearAlgebra as LA
+
+"""
+    inputToMatrix(grid::String)
+
+Parse a string formatted grid of integers to a matrix
+
+# Examples
+```jldoctest
+>julia input = "
+1 2
+3 4
+"
+2×2 Matrix{Int64}:
+ 1  2
+ 3  4
+```
+
+See also `split`, `parse`, `collect`
+"""
+function inputToMatrix(gridString::String)
+    numStringVector = split(gridString)                          # split at space or newline, giving a Vector
+    sqrdim = Int(sqrt(length(numStringVector)))                  # get dimension of square grid
+    numStringMatrix = reshape(numStringVector, (sqrdim, sqrdim)) # turn vector into matrix of strings
+    numMatrix = parse.(Int, numStringMatrix)                     # parse strings to numbers
+    numMatrix = collect(transpose(numMatrix))                    # transpose to match input and convert to Matrix{Int}
+    return numMatrix
+end
+
+"""
+    diag(array::Matrix{Int}, ind::Union{Tuple{Int, Int}, CartesianIndex{2}}, len::Int)
+
+Get the diagonal elements of a matrix starting at some position.
+
+# Examples
+```jldoctest
+julia> mat = collect(transpose(reshape(1:9, (3,3))))
+3×3 Matrix{Int64}:
+ 1  2  3
+ 4  5  6
+ 7  8  9
+
+julia> diag(mat, (2,2), 2)
+2-element Vector{Int64}:
+ 5
+ 9
+
+julia> diag(mat, (2,1), 2)
+2-element Vector{Int64}:
+ 4
+ 8
+"""
+function diag(array::Matrix{Int}, ind::Union{Tuple{Int, Int}, CartesianIndex{2}}, len::Int)
+    inds = CartesianIndex(ind) + CartesianIndex
+end
+
+function diag(args::Union{Tuple{Any, Any, Any}, NamedTuple})
+    return diag(args...)
+end
+
+"""
+    right(array::Matrix{Int}, ind::Union{Tuple{Int, Int}, CartesianIndex{2}}, len::Int)
+
+TBW
+"""
+function right(array::Matrix{Int}, ind::Union{Tuple{Int, Int}, CartesianIndex{2}}, len::Int)
+    return array[ind[1], ind[2]:ind[2]+len-1]
+end
+
+function right(args::Union{Tuple{Any, Any, Any}, NamedTuple})
+    return right(args...)
+end
+
+"""
+    down(array::Matrix{Int}, ind::Union{Tuple{Int, Int}, CartesianIndex{2}}, len::Int)
+
+TBW
+"""
+function down(array::Matrix{Int}, ind::Union{Tuple{Int, Int}, CartesianIndex{2}}, len::Int)
+    return array[ind[1]:ind[1]+len-1, ind[2]]
+end
+
+function down(args::Union{Tuple{Any, Any, Any}, NamedTuple})
+    return down(args...)
+end
+
+function diagDomain(array::Matrix{Int}, len::Int)
+    return CartesianIndices(array)[1:end-len+1, 1:end-len+1]
+end
+
+function rightDomain(array::Matrix{Int}, len::Int)
+    return CartesianIndices(array)[:, 1:end-len+1]
+end
+
+function downDomain(array::Matrix{Int}, len::Int)
+    return CartesianIndices(array)[1:end-len+1, :]
+end
+
 gridString = "08 02 22 97 38 15 00 40 00 75 04 05 07 78 52 12 50 77 91 08
 49 49 99 40 17 81 18 57 60 87 17 40 98 43 69 48 04 56 62 00
 81 49 31 73 55 79 14 29 93 71 40 67 53 88 30 03 49 13 36 65
@@ -25,73 +123,11 @@ gridString = "08 02 22 97 38 15 00 40 00 75 04 05 07 78 52 12 50 77 91 08
 20 73 35 29 78 31 90 01 74 31 49 71 48 86 81 16 23 57 05 54
 01 70 54 71 83 51 54 69 16 92 33 48 61 43 52 01 89 19 67 48"
 
-"""
-    inputToMatrix(grid::String)
-
-TBW
-"""
-function inputToMatrix(grid::String)
-    numStringVector = split(gridString)                          # split at space or newline, giving a Vector
-    sqrdim = Int(sqrt(length(numStringVector)))                  # get dimension of square grid
-    numStringMatrix = reshape(numStringVector, (sqrdim, sqrdim)) # turn vector into matrix of strings
-    numMatrix = parse.(Int, numStringMatrix)                     # parse strings to numbers
-    numMatrix = collect(transpose(numMatrix))                    # transpose to match input and convert to Matrix{Int}
-    return numMatrix
-end
-
-"""
-    diag(array::Matrix{Int}, ind::Union{Tuple{Int, Int}, CartesianIndex{2}}, len::Int)
-
-TBW
-"""
-function diag(array::Matrix{Int}, ind::Union{Tuple{Int, Int}, CartesianIndex{2}}, len::Int)
-    return [array[ind[1] + i, ind[2] + i] for i in 0:len-1]
-end
-
-function diag(args::Union{Tuple{Any, Any, Any}, NamedTuple})
-    return diag(args...)
-end
-
-"""
-    right(array::Matrix{Int}, ind::Union{Tuple{Int, Int}, CartesianIndex{2}}, len::Int)
-
-TBW
-"""
-function right(array::Matrix{Int}, ind::Union{Tuple{Int, Int}, CartesianIndex{2}}, len::Int)
-    return array[ind[1], ind[2]:ind[2]+len-1]
-end
-
-function right(args::Tuple{Any, Any, Any})
-    return right(args...)
-end
-
-"""
-    down(array::Matrix{Int}, ind::Union{Tuple{Int, Int}, CartesianIndex{2}}, len::Int)
-
-TBW
-"""
-function down(array::Matrix{Int}, ind::Union{Tuple{Int, Int}, CartesianIndex{2}}, len::Int)
-    return array[ind[1]:ind[1]+len-1, ind[2]]
-end
-
-function down(args::Tuple{Any, Any, Any})
-    return down(args...)
-end
-
-function diagDomain(array::Matrix{Int}, len::Int)
-    return CartesianIndices(array)[1:end-len+1, 1:end-len+1]
-end
-
-function rightDomain(array::Matrix{Int}, len::Int)
-    return CartesianIndices(array)[:, 1:end-len+1]
-end
-
-function downDomain(array::Matrix{Int}, len::Int)
-    return CartesianIndices(array)[1:end-len+1, :]
-end
-
 testArg = (mat = inputToMatrix(gridString), ind = (7, 9), len = 4)
-println(diag(testArg)) # FIXME: only has method for Tuple and not NamedTuple
+println(diag(testArg))
 println(right(testArg))
 println(down(testArg))
 println(diagDomain(testArg.mat, testArg.len))
+println(rightDomain(testArg.mat, testArg.len))
+println(downDomain(testArg.mat, testArg.len))
+
