@@ -48,7 +48,7 @@ function diag(array::Matrix{Int}, ind::Union{Tuple{Int, Int}, CartesianIndex{2}}
     return [array[ind[1] + i, ind[2] + i] for i in 0:len-1]
 end
 
-function diag(args::Tuple{Any, Any, Any})
+function diag(args::Union{Tuple{Any, Any, Any}, NamedTuple})
     return diag(args...)
 end
 
@@ -78,12 +78,20 @@ function down(args::Tuple{Any, Any, Any})
     return down(args...)
 end
 
-function rightDomain(array::Matrix{Int}, len::Int)
-    dom = axes(array)
-    
+function diagDomain(array::Matrix{Int}, len::Int)
+    return CartesianIndices(array)[1:end-len+1, 1:end-len+1]
 end
 
-testArg = (inputToMatrix(gridString), (7, 9), 4)
-println(diag(testArg))
+function rightDomain(array::Matrix{Int}, len::Int)
+    return CartesianIndices(array)[:, 1:end-len+1]
+end
+
+function downDomain(array::Matrix{Int}, len::Int)
+    return CartesianIndices(array)[1:end-len+1, :]
+end
+
+testArg = (mat = inputToMatrix(gridString), ind = (7, 9), len = 4)
+println(diag(testArg)) # FIXME: only has method for Tuple and not NamedTuple
 println(right(testArg))
 println(down(testArg))
+println(diagDomain(testArg.mat, testArg.len))
