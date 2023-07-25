@@ -1,7 +1,7 @@
 #= Collection of useful functions from the problems I've completed =#
 
 module UsefulFunctions
-
+export fibonacci, unitTest, debugTest
 """
     fibonacci(n::Integer)
 
@@ -91,6 +91,26 @@ See also: `factor`, `isempty`
 """
 function isPrime(n::Int; parallel = false)
     return isempty(factor(n, parallel = parallel))
+end
+
+"""
+    unitTest(f::Function, test::Any, answer::Any)
+
+TBW
+"""
+function unitTest(f::Function, test::Any, answer::Any)
+    println(string(f, ": ", f(test) == answer ? crayon"green"("PASSED") : crayon"red"("FAILED")))
+end
+
+"""
+    debugTest()
+
+TBW
+"""
+function debugTest(test::Function)
+    if split(PROGRAM_FILE, "\\")[end] == "run_debugger.jl"
+        test()
+    end
 end
 
 end

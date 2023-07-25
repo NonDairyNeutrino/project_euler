@@ -4,7 +4,7 @@ Problem 11: Largest Product in a Grid
 What is the greatest product of four adjacent numbers in the same direction (up, down, left, right, or diagonally) in the 20x20 grid
 =#
 
-import LinearAlgebra as LA
+using Test
 
 """
     inputToMatrix(grid::String)
@@ -33,8 +33,10 @@ function inputToMatrix(gridString::String)
     return numMatrix
 end
 
+# TODO: Include Inf as an option for chunkSize to get the rest of the array in that direction
+
 """
-    diag(array::Matrix{Int}, ind::Union{Tuple{Int, Int}, CartesianIndex{2}}, len::Int)
+    diagChunk(array::Matrix{Int}, ind::Union{Tuple{Int,Int},CartesianIndex{2}}, chunkSize::Int)
 
 Get the diagonal elements of a matrix starting at some position.
 
@@ -56,53 +58,101 @@ julia> diag(mat, (2,1), 2)
  4
  8
 """
-function diag(array::Matrix{Int}, ind::Union{Tuple{Int, Int}, CartesianIndex{2}}, len::Int)
-    inds = CartesianIndex(ind) + CartesianIndex
+function diagChunk(array::Matrix{Int}, ind::Union{Tuple{Int,Int},CartesianIndex{2}}, chunkSize::Int)
+    # CartesianIndex nor CartesianIndices support "diagonal" incrementation
+    # CartesianIndices only gives a matrix of indices
+    # idk restort to loop I guess
+    inds = [CartesianIndex(ind) + n * CartesianIndex((1, 1)) for n in 0:chunkSize-1]
+    return array[inds]
 end
 
-function diag(args::Union{Tuple{Any, Any, Any}, NamedTuple})
-    return diag(args...)
+function diagChunk(args::Union{Tuple{Any,Any,Any},NamedTuple})
+    return diagChunk(args...)
 end
 
 """
-    right(array::Matrix{Int}, ind::Union{Tuple{Int, Int}, CartesianIndex{2}}, len::Int)
+    rightChunk(array::Matrix{Int}, ind::Union{Tuple{Int, Int}, CartesianIndex{2}}, chunkSize::Int)
 
 TBW
 """
-function right(array::Matrix{Int}, ind::Union{Tuple{Int, Int}, CartesianIndex{2}}, len::Int)
-    return array[ind[1], ind[2]:ind[2]+len-1]
+function rightChunk(array::Matrix{Int}, ind::Union{Tuple{Int,Int},CartesianIndex{2}}, chunkSize::Int)
+    index = CartesianIndex(ind)
+    indexOffset = CartesianIndex((0, chunkSize - 1))
+    stillAMatrix = array[index:index+indexOffset]
+    return vec(stillAMatrix)
 end
 
-function right(args::Union{Tuple{Any, Any, Any}, NamedTuple})
-    return right(args...)
+function rightChunk(args::Union{Tuple{Any,Any,Any},NamedTuple})
+    return rightChunk(args...)
 end
 
 """
-    down(array::Matrix{Int}, ind::Union{Tuple{Int, Int}, CartesianIndex{2}}, len::Int)
+    downChunk(array::Matrix{Int}, ind::Union{Tuple{Int, Int}, CartesianIndex{2}}, chunkSize::Int)
 
 TBW
 """
-function down(array::Matrix{Int}, ind::Union{Tuple{Int, Int}, CartesianIndex{2}}, len::Int)
-    return array[ind[1]:ind[1]+len-1, ind[2]]
+function downChunk(array::Matrix{Int}, ind::Union{Tuple{Int,Int},CartesianIndex{2}}, chunkSize::Int)
+    return array[ind[1]:ind[1]+chunkSize-1, ind[2]]
 end
 
-function down(args::Union{Tuple{Any, Any, Any}, NamedTuple})
-    return down(args...)
+function downChunk(args::Union{Tuple{Any,Any,Any},NamedTuple})
+    return downChunk(args...)
 end
 
+"""
+    diagDomain(array::Matrix{Int}, len::Int)
+
+TBW
+"""
 function diagDomain(array::Matrix{Int}, len::Int)
     return CartesianIndices(array)[1:end-len+1, 1:end-len+1]
 end
 
+"""
+    rightDomain(array::Matrix{Int}, len::Int)
+
+TBW
+"""
 function rightDomain(array::Matrix{Int}, len::Int)
     return CartesianIndices(array)[:, 1:end-len+1]
 end
 
+"""
+    downDomain(array::Matrix{Int}, len::Int)
+
+TBW
+"""
 function downDomain(array::Matrix{Int}, len::Int)
     return CartesianIndices(array)[1:end-len+1, :]
 end
 
-gridString = "08 02 22 97 38 15 00 40 00 75 04 05 07 78 52 12 50 77 91 08
+"""
+    debugTest()
+
+TBW
+"""
+function debugTest()
+    if split(PROGRAM_FILE, "\\")[end] == "run_debugger.jl"
+
+        testMat = collect(transpose(reshape(1:9, (3,3))))
+        testArg = (mat=testMat, ind=(2,2), len=2)
+
+        @testset verbose = true "Function Tests" begin
+            @testset "Chunk Tests" begin
+                @test diagChunk(testArg) == [5, 9]
+                @test rightChunk(testArg) == [5, 6]
+                @test downChunk(testArg) == [5, 8]
+            end
+            @testset "Domain Tests" begin
+                @test diagDomain(testArg.mat, testArg.len) == CartesianIndices((2, 2))
+                @test rightDomain(testArg.mat, testArg.len) == CartesianIndices((3, 2))
+                @test downDomain(testArg.mat, testArg.len) == CartesianIndices((2, 3))
+            end
+        end
+    end
+end
+
+const gridString = "08 02 22 97 38 15 00 40 00 75 04 05 07 78 52 12 50 77 91 08
 49 49 99 40 17 81 18 57 60 87 17 40 98 43 69 48 04 56 62 00
 81 49 31 73 55 79 14 29 93 71 40 67 53 88 30 03 49 13 36 65
 52 70 95 23 04 60 11 42 69 24 68 56 01 32 56 71 37 02 36 91
@@ -123,11 +173,4 @@ gridString = "08 02 22 97 38 15 00 40 00 75 04 05 07 78 52 12 50 77 91 08
 20 73 35 29 78 31 90 01 74 31 49 71 48 86 81 16 23 57 05 54
 01 70 54 71 83 51 54 69 16 92 33 48 61 43 52 01 89 19 67 48"
 
-testArg = (mat = inputToMatrix(gridString), ind = (7, 9), len = 4)
-println(diag(testArg))
-println(right(testArg))
-println(down(testArg))
-println(diagDomain(testArg.mat, testArg.len))
-println(rightDomain(testArg.mat, testArg.len))
-println(downDomain(testArg.mat, testArg.len))
-
+debugTest()
