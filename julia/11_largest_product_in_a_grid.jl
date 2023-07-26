@@ -134,19 +134,30 @@ TBW
 function debugTest()
     if split(PROGRAM_FILE, "\\")[end] == "run_debugger.jl"
 
-        testMat = collect(transpose(reshape(1:9, (3,3))))
-        testArg = (mat=testMat, ind=(2,2), len=2)
+        testMat1 = collect(transpose(reshape(1:9, (3,3))))
+        testMat2 = inputToMatrix(gridString)
+        testArg1 = (mat=testMat1, ind=(2,2), len=2)
+        testArg2 = (mat=testMat2, ind=(7, 9), len=4)
 
         @testset verbose = true "Function Tests" begin
-            @testset "Chunk Tests" begin
-                @test diagChunk(testArg) == [5, 9]
-                @test rightChunk(testArg) == [5, 6]
-                @test downChunk(testArg) == [5, 8]
+            @testset verbose = true "Chunk Tests" begin
+                @testset "diagChunk Tests" begin
+                    @test diagChunk(testArg1) == [5, 9]
+                    @test diagChunk(testArg2) == [26, 63, 78, 14]
+                end
+                @testset "rightChunk Tests" begin
+                    @test rightChunk(testArg1) == [5, 6]
+                    @test rightChunk(testArg2) == [26, 38, 40, 67]
+                end
+                @testset "downChunk Tests" begin
+                    @test downChunk(testArg1) == [5, 8]
+                    @test downChunk(testArg2) == [26, 95, 97, 20]
+                end
             end
             @testset "Domain Tests" begin
-                @test diagDomain(testArg.mat, testArg.len) == CartesianIndices((2, 2))
-                @test rightDomain(testArg.mat, testArg.len) == CartesianIndices((3, 2))
-                @test downDomain(testArg.mat, testArg.len) == CartesianIndices((2, 3))
+                @test diagDomain(testArg1.mat, testArg1.len) == CartesianIndices((2, 2))
+                @test rightDomain(testArg1.mat, testArg1.len) == CartesianIndices((3, 2))
+                @test downDomain(testArg1.mat, testArg1.len) == CartesianIndices((2, 3))
             end
         end
     end
