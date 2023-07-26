@@ -139,25 +139,40 @@ function debugTest()
         testArg1 = (mat=testMat1, ind=(2,2), len=2)
         testArg2 = (mat=testMat2, ind=(7, 9), len=4)
 
-        @testset verbose = true "Function Tests" begin
-            @testset verbose = true "Chunk Tests" begin
-                @testset "diagChunk Tests" begin
+        @testset verbose = true begin
+            @testset verbose = true "Chunk" begin
+                @testset "diagChunk" begin
                     @test diagChunk(testArg1) == [5, 9]
                     @test diagChunk(testArg2) == [26, 63, 78, 14]
+                    @test_throws BoundsError diagChunk(testArg1.mat, (3,3), testArg1.len)
+                    @test_throws BoundsError diagChunk(testArg2.mat, (18, 19), testArg2.len)
                 end
-                @testset "rightChunk Tests" begin
+                @testset "rightChunk" begin
                     @test rightChunk(testArg1) == [5, 6]
                     @test rightChunk(testArg2) == [26, 38, 40, 67]
+                    @test_throws BoundsError rightChunk(testArg1.mat, (3, 3), testArg1.len)
+                    @test_throws BoundsError rightChunk(testArg2.mat, (18, 19), testArg2.len)
                 end
-                @testset "downChunk Tests" begin
+                @testset "downChunk" begin
                     @test downChunk(testArg1) == [5, 8]
                     @test downChunk(testArg2) == [26, 95, 97, 20]
+                    @test_throws BoundsError downChunk(testArg1.mat, (3, 3), testArg1.len)
+                    @test_throws BoundsError downChunk(testArg2.mat, (18, 19), testArg2.len)
                 end
             end
-            @testset "Domain Tests" begin
-                @test diagDomain(testArg1.mat, testArg1.len) == CartesianIndices((2, 2))
-                @test rightDomain(testArg1.mat, testArg1.len) == CartesianIndices((3, 2))
-                @test downDomain(testArg1.mat, testArg1.len) == CartesianIndices((2, 3))
+            @testset verbose = true "Domain" begin
+                @testset "diagDomain" begin
+                    @test diagDomain(testArg1.mat, testArg1.len) == CartesianIndices((2, 2))
+                    @test diagDomain(testArg2.mat, testArg2.len) == CartesianIndices((17,17))
+                end
+                @testset "rightDomain" begin
+                    @test rightDomain(testArg1.mat, testArg1.len) == CartesianIndices((3, 2))
+                    @test rightDomain(testArg2.mat, testArg2.len) == CartesianIndices((20,17))
+                end
+                @testset "downDomain" begin
+                    @test downDomain(testArg1.mat, testArg1.len) == CartesianIndices((2, 3))
+                    @test downDomain(testArg2.mat, testArg2.len) == CartesianIndices((17, 20))
+                end
             end
         end
     end
