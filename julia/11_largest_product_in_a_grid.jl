@@ -55,7 +55,7 @@ julia> rightChunk(mat, (2,2), 2)
  5
  3
 
-julia> diagChunk(mat, (2,1), 2)
+julia> rightChunk(mat, (2,1), 2)
 2-element Vector{Int64}:
  4
  5
@@ -109,7 +109,7 @@ function downChunk(args::Union{Tuple{Any,Any,Any},NamedTuple})
 end
 
 """
-    diagChunk(array::Matrix{Int}, ind::Union{Dims{2}, CartesianIndex{2}}, chunkSize::Int; rev::Bool = false)
+    diagChunk(array::Matrix{Int}, ind::Union{Dims{2}, CartesianIndex{2}}, chunkSize::Int; isreversed::Bool = false)
 
 Get the diagonal elements of a matrix starting at some position.
 
@@ -131,7 +131,7 @@ julia> diagChunk(mat, (2,1), 2)
  4
  8
 
- julia> diagChunk(mat, (2,2), 2, rev = true)
+ julia> diagChunk(mat, (2,2), 2, isreversed = true)
 2-element Vector{Int64}:
  5
  3
@@ -139,13 +139,13 @@ julia> diagChunk(mat, (2,1), 2)
 
  See also: `CartesianIndex`, `CartesianIndices`
 """
-function diagChunk(array::Matrix{Int}, ind::Union{Dims{2}, CartesianIndex{2}}, chunkSize::Int; rev::Bool = false)
+function diagChunk(array::Matrix{Int}, ind::Union{Dims{2},CartesianIndex{2}}, chunkSize::Int; isreversed::Bool=false)
     # CartesianIndex nor CartesianIndices support "diagonal" incrementation
     # CartesianIndices only gives a matrix of indices
     # idk restort to loop I guess
     inds = [CartesianIndex(ind) + n * CartesianIndex((1, 1)) for n in 0:chunkSize-1]
 
-    if rev
+    if isreversed
         mat = reverse(array, dims = 1)
     else
         mat = array
@@ -159,7 +159,7 @@ end
 
 Can also be given a Tuple of its arguments.
 """
-function diagChunk(args::Union{Tuple{Any,Any,Any},NamedTuple})
+function diagChunk(args::Union{Tuple{Any, Any, Any}, NamedTuple})
     return diagChunk(args...)
 end
 
@@ -284,7 +284,7 @@ function downPartition(array::Matrix{Int}, chunkSize::Int)
 end
 
 """
-    diagPartition(array::Matrix{Int}, chunkSize::Int)
+    diagPartition(array::Matrix{Int}, chunkSize::Int; isreversed::Bool = false)
 
 Partitions the matrix into directed chunks.
 
@@ -304,8 +304,8 @@ julia> diagPartition(mat, 2)
 
 See also: `diagDomain`
 """
-function diagPartition(array::Matrix{Int}, chunkSize::Int)
-    return [diagChunk(array, chunkIndex, chunkSize) for chunkIndex in diagDomain(array, chunkSize)]
+function diagPartition(array::Matrix{Int}, chunkSize::Int; isreversed::Bool = false)
+    return [diagChunk(array, chunkIndex, chunkSize, isreversed = isreversed) for chunkIndex in diagDomain(array, chunkSize)]
 end
 
 function debugTest()
@@ -415,7 +415,7 @@ function main(gridString=gridString, chunkSize=4)
     # the above implementation doesn't reach the lower left and top right corners of the grid
     # reverse rows to effectively get to them
     # this is also effectively applying the same algorithm but with the direction of the diagonal reverse (i.e. down-left instead of down-right) on the original grid
-    otherDiagProd = maximum(prod, diagPartition(reverse(mat, dims = 1), chunkSize))
+    otherDiagProd = maximum(prod, diagPartition(mat, chunkSize, isreversed = true))
     maxProd = max(rightProd, downProd, diagProd, otherDiagProd)
     println("Largest product: $maxProd")
 end
