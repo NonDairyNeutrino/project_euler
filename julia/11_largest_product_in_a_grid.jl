@@ -29,7 +29,7 @@ function inputToMatrix(gridString::String)
     sqrdim = Int(sqrt(length(numStringVector)))                  # get dimension of square grid
     numStringMatrix = reshape(numStringVector, (sqrdim, sqrdim)) # turn vector into matrix of strings
     numMatrix = parse.(Int, numStringMatrix)                     # parse strings to numbers
-    numMatrix = collect(transpose(numMatrix))                    # transpose to match input and convert to Matrix{Int}
+    numMatrix = permutedims(numMatrix)                           # transpose to match input and convert to Matrix{Int}
     return numMatrix
 end
 
@@ -42,7 +42,7 @@ Get the diagonal elements of a matrix starting at some position.
 
 # Examples
 ```jldoctest
-julia> mat = collect(transpose(reshape(1:9, (3,3))))
+julia> mat = permutedims(reshape(1:9, (3,3)))
 3x3 Matrix{Int64}:
  1  2  3
  4  5  6
@@ -58,7 +58,7 @@ julia> diag(mat, (2,1), 2)
  4
  8
 """
-function diagChunk(array::Matrix{Int}, ind::Union{Tuple{Int,Int},CartesianIndex{2}}, chunkSize::Int)
+function diagChunk(array::Matrix{Int}, ind::Union{Dims{2},CartesianIndex{2}}, chunkSize::Int)
     # CartesianIndex nor CartesianIndices support "diagonal" incrementation
     # CartesianIndices only gives a matrix of indices
     # idk restort to loop I guess
@@ -126,34 +126,50 @@ function downDomain(array::Matrix{Int}, len::Int)
     return CartesianIndices(array)[1:end-len+1, :]
 end
 
-"""
-    debugTest()
+function rightPartition(array::Matrix{Int}, chunkSize::Int)
+    return [rightChunk(array, chunkIndex, chunkSize) for chunkIndex in rightDomain(array, chunkSize)]
+end
 
-TBW
-"""
+function downPartition(array::Matrix{Int}, chunkSize::Int)
+    return [downChunk(array, chunkIndex, chunkSize) for chunkIndex in downDomain(array, chunkSize)]
+end
+
+function diagPartition(array::Matrix{Int}, chunkSize::Int)
+    return [diagChunk(array, chunkIndex, chunkSize) for chunkIndex in diagDomain(array, chunkSize)]
+end
+
 function debugTest()
     if split(PROGRAM_FILE, "\\")[end] == "run_debugger.jl"
 
-        testMat1 = collect(transpose(reshape(1:9, (3,3))))
+        testMat1 = permutedims(reshape(1:9, (3,3)))
         testMat2 = inputToMatrix(gridString)
         testArg1 = (mat=testMat1, ind=(2,2), len=2)
         testArg2 = (mat=testMat2, ind=(7, 9), len=4)
 
         @testset verbose = true begin
+            @testset verbose = true "Input Parsing" begin
+                @test inputToMatrix("1 2 3
+                    4 5 6
+                    7 8 9") == [
+                        1 2 3
+                        4 5 6
+                        7 8 9
+                    ]
+            end
             @testset verbose = true "Chunk" begin
-                @testset "diagChunk" begin
+                @testset verbose = true "diagChunk" begin
                     @test diagChunk(testArg1) == [5, 9]
                     @test diagChunk(testArg2) == [26, 63, 78, 14]
                     @test_throws BoundsError diagChunk(testArg1.mat, (3,3), testArg1.len)
                     @test_throws BoundsError diagChunk(testArg2.mat, (18, 19), testArg2.len)
                 end
-                @testset "rightChunk" begin
+                @testset verbose = true "rightChunk" begin
                     @test rightChunk(testArg1) == [5, 6]
                     @test rightChunk(testArg2) == [26, 38, 40, 67]
                     @test_throws BoundsError rightChunk(testArg1.mat, (3, 3), testArg1.len)
                     @test_throws BoundsError rightChunk(testArg2.mat, (18, 19), testArg2.len)
                 end
-                @testset "downChunk" begin
+                @testset verbose = true "downChunk" begin
                     @test downChunk(testArg1) == [5, 8]
                     @test downChunk(testArg2) == [26, 95, 97, 20]
                     @test_throws BoundsError downChunk(testArg1.mat, (3, 3), testArg1.len)
@@ -161,18 +177,38 @@ function debugTest()
                 end
             end
             @testset verbose = true "Domain" begin
-                @testset "diagDomain" begin
+                @testset verbose = true "diagDomain" begin
                     @test diagDomain(testArg1.mat, testArg1.len) == CartesianIndices((2, 2))
                     @test diagDomain(testArg2.mat, testArg2.len) == CartesianIndices((17,17))
                 end
-                @testset "rightDomain" begin
+                @testset verbose = true "rightDomain" begin
                     @test rightDomain(testArg1.mat, testArg1.len) == CartesianIndices((3, 2))
                     @test rightDomain(testArg2.mat, testArg2.len) == CartesianIndices((20,17))
                 end
-                @testset "downDomain" begin
+                @testset verbose = true "downDomain" begin
                     @test downDomain(testArg1.mat, testArg1.len) == CartesianIndices((2, 3))
                     @test downDomain(testArg2.mat, testArg2.len) == CartesianIndices((17, 20))
                 end
+            end
+            @testset verbose = true "Partition" begin
+                @test rightPartition(testArg1.mat, testArg1.len) == [
+                    [[1, 2]] [[2, 3]]
+                    [[4, 5]] [[5, 6]]
+                    [[7, 8]] [[8, 9]]
+                ]
+                @test downPartition(testArg1.mat, testArg1.len) == [
+                    [[1, 4]] [[2, 5]] [[3, 6]]
+                    [[4, 7]] [[5, 8]] [[6, 9]]
+                ]
+                @test diagPartition(testArg1.mat, testArg1.len) == [
+                    [[1, 5]] [[2, 6]]
+                    [[4, 8]] [[5, 9]]
+                ]
+            end
+            @testset verbose = true "Max Prod" begin
+                @test maximum(prod, rightPartition(testArg1.mat, testArg1.len)) == 8 * 9
+                @test maximum(prod, downPartition(testArg1.mat, testArg1.len)) == 6 * 9
+                @test maximum(prod, diagPartition(testArg1.mat, testArg1.len)) == 5 * 9
             end
         end
     end
@@ -203,11 +239,11 @@ function main(gridString=gridString, chunkSize=4)
     debugTest()
     
     mat = inputToMatrix(gridString)
-    rightProd = maximum([prod(rightChunk(mat, chunkIndex, chunkSize)) for chunkIndex in rightDomain(mat, chunkSize)])
-    downProd = maximum([prod(downChunk(mat, chunkIndex, chunkSize)) for chunkIndex in downDomain(mat, chunkSize)])
-    diagProd = maximum([prod(diagChunk(mat, chunkIndex, chunkSize)) for chunkIndex in diagDomain(mat, chunkSize)])
-    output = max(rightProd, downProd, diagProd)
-    println(output)
+    rightProd = maximum(prod, rightPartition(mat, chunkSize))
+    downProd  = maximum(prod, downPartition(mat, chunkSize))
+    diagProd  = maximum(prod, diagPartition(mat, chunkSize))
+    maxProd   = max(rightProd, downProd, diagProd)
+    println("Largest product: $maxProd")
 end
 
 main()
