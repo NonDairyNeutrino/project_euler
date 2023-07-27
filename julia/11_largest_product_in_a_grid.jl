@@ -13,7 +13,7 @@ Parse a string formatted grid of integers to a matrix
 
 # Examples
 ```jldoctest
->julia input = "
+julia> input = "
 1 2
 3 4
 "
@@ -242,7 +242,11 @@ function main(gridString=gridString, chunkSize=4)
     rightProd = maximum(prod, rightPartition(mat, chunkSize))
     downProd  = maximum(prod, downPartition(mat, chunkSize))
     diagProd  = maximum(prod, diagPartition(mat, chunkSize))
-    maxProd   = max(rightProd, downProd, diagProd)
+    # the above implementation doesn't reach the lower left and top right corners of the grid
+    # reverse rows to effectively get to them
+    # this is also effectively applying the same algorithm but with the direction of the diagonal reverse (i.e. down-left instead of down-right) on the original grid
+    otherDiagProd = maximum(prod, diagPartition(reverse(mat, dims = 1), chunkSize))
+    maxProd = max(rightProd, downProd, diagProd, otherDiagProd)
     println("Largest product: $maxProd")
 end
 
