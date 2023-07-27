@@ -9,14 +9,16 @@ using Test
 """
     inputToMatrix(grid::String)
 
-Parse a string formatted grid of integers to a matrix
+Parse a string formatted grid of integers to a matrix.
 
 # Examples
 ```jldoctest
 julia> input = "
 1 2
 3 4
-"
+";
+
+julia> inputToMatrix(input)
 2×2 Matrix{Int64}:
  1  2
  3  4
@@ -36,9 +38,9 @@ end
 # TODO: Include Inf as an option for chunkSize to get the rest of the array in that direction
 
 """
-    diagChunk(array::Matrix{Int}, ind::Union{Tuple{Int,Int},CartesianIndex{2}}, chunkSize::Int)
+    rightChunk(array::Matrix{Int}, ind::Union{Dims{2},CartesianIndex{2}}, chunkSize::Int)
 
-Get the diagonal elements of a matrix starting at some position.
+Get the elements right of some position in a matrix.
 
 # Examples
 ```jldoctest
@@ -48,34 +50,20 @@ julia> mat = permutedims(reshape(1:9, (3,3)))
  4  5  6
  7  8  9
 
-julia> diag(mat, (2,2), 2)
+julia> rightChunk(mat, (2,2), 2)
 2-element Vector{Int64}:
  5
- 9
+ 3
 
-julia> diag(mat, (2,1), 2)
+julia> diagChunk(mat, (2,1), 2)
 2-element Vector{Int64}:
  4
- 8
-"""
-function diagChunk(array::Matrix{Int}, ind::Union{Dims{2},CartesianIndex{2}}, chunkSize::Int)
-    # CartesianIndex nor CartesianIndices support "diagonal" incrementation
-    # CartesianIndices only gives a matrix of indices
-    # idk restort to loop I guess
-    inds = [CartesianIndex(ind) + n * CartesianIndex((1, 1)) for n in 0:chunkSize-1]
-    return array[inds]
-end
+ 5
+ ```
 
-function diagChunk(args::Union{Tuple{Any,Any,Any},NamedTuple})
-    return diagChunk(args...)
-end
-
+ See also: `CartesianIndex`, `CartesianIndices`
 """
-    rightChunk(array::Matrix{Int}, ind::Union{Tuple{Int, Int}, CartesianIndex{2}}, chunkSize::Int)
-
-TBW
-"""
-function rightChunk(array::Matrix{Int}, ind::Union{Tuple{Int,Int},CartesianIndex{2}}, chunkSize::Int)
+function rightChunk(array::Matrix{Int}, ind::Union{Dims{2},CartesianIndex{2}}, chunkSize::Int)
     index = CartesianIndex(ind)
     indexOffset = CartesianIndex((0, chunkSize - 1))
     stillAMatrix = array[index:index+indexOffset]
@@ -87,11 +75,32 @@ function rightChunk(args::Union{Tuple{Any,Any,Any},NamedTuple})
 end
 
 """
-    downChunk(array::Matrix{Int}, ind::Union{Tuple{Int, Int}, CartesianIndex{2}}, chunkSize::Int)
+    downChunk(array::Matrix{Int}, ind::Union{Dims{2},CartesianIndex{2}}, chunkSize::Int)
 
-TBW
+Get the below some position in a matrix.
+
+# Examples
+```jldoctest
+julia> mat = permutedims(reshape(1:9, (3,3)))
+3x3 Matrix{Int64}:
+ 1  2  3
+ 4  5  6
+ 7  8  9
+
+julia> downChunk(mat, (2,2), 2)
+2-element Vector{Int64}:
+ 5
+ 8
+
+julia> downChunk(mat, (2,1), 2)
+2-element Vector{Int64}:
+ 4
+ 7
+ ```
+
+ See also: `CartesianIndex`, `CartesianIndices`
 """
-function downChunk(array::Matrix{Int}, ind::Union{Tuple{Int,Int},CartesianIndex{2}}, chunkSize::Int)
+function downChunk(array::Matrix{Int}, ind::Union{Dims{2},CartesianIndex{2}}, chunkSize::Int)
     return array[ind[1]:ind[1]+chunkSize-1, ind[2]]
 end
 
@@ -100,18 +109,78 @@ function downChunk(args::Union{Tuple{Any,Any,Any},NamedTuple})
 end
 
 """
-    diagDomain(array::Matrix{Int}, len::Int)
+    diagChunk(array::Matrix{Int}, ind::Union{Dims{2}, CartesianIndex{2}}, chunkSize::Int; rev::Bool = false)
 
-TBW
+Get the diagonal elements of a matrix starting at some position.
+
+# Examples
+```jldoctest
+julia> mat = permutedims(reshape(1:9, (3,3)))
+3x3 Matrix{Int64}:
+ 1  2  3
+ 4  5  6
+ 7  8  9
+
+julia> diagChunk(mat, (2,2), 2)
+2-element Vector{Int64}:
+ 5
+ 9
+
+julia> diagChunk(mat, (2,1), 2)
+2-element Vector{Int64}:
+ 4
+ 8
+
+ julia> diagChunk(mat, (2,2), 2, rev = true)
+2-element Vector{Int64}:
+ 5
+ 3
+ ```
+
+ See also: `CartesianIndex`, `CartesianIndices`
 """
-function diagDomain(array::Matrix{Int}, len::Int)
-    return CartesianIndices(array)[1:end-len+1, 1:end-len+1]
+function diagChunk(array::Matrix{Int}, ind::Union{Dims{2}, CartesianIndex{2}}, chunkSize::Int; rev::Bool = false)
+    # CartesianIndex nor CartesianIndices support "diagonal" incrementation
+    # CartesianIndices only gives a matrix of indices
+    # idk restort to loop I guess
+    inds = [CartesianIndex(ind) + n * CartesianIndex((1, 1)) for n in 0:chunkSize-1]
+
+    if rev
+        mat = reverse(array, dims = 1)
+    else
+        mat = array
+    end
+
+    return mat[inds]
+end
+
+"""
+    diagChunk(args::Union{Tuple{Any, Any, Any}, NamedTuple})
+
+Can also be given a Tuple of its arguments.
+"""
+function diagChunk(args::Union{Tuple{Any,Any,Any},NamedTuple})
+    return diagChunk(args...)
 end
 
 """
     rightDomain(array::Matrix{Int}, len::Int)
 
-TBW
+Calculate the availabe indices that yield an directed chunk.
+
+# Examples
+```jldoctest
+julia> mat = permutedims(reshape(1:9, (3,3)))
+3x3 Matrix{Int64}:
+ 1  2  3
+ 4  5  6
+ 7  8  9
+
+julia> rightDomain(mat, 2)
+CartesianIndices((3, 2))
+```
+
+See also: `CartesianIndices`
 """
 function rightDomain(array::Matrix{Int}, len::Int)
     return CartesianIndices(array)[:, 1:end-len+1]
@@ -120,20 +189,121 @@ end
 """
     downDomain(array::Matrix{Int}, len::Int)
 
-TBW
+Calculate the availabe indices that yield an directed chunk.
+
+# Examples
+```jldoctest
+julia> mat = permutedims(reshape(1:9, (3,3)))
+3x3 Matrix{Int64}:
+ 1  2  3
+ 4  5  6
+ 7  8  9
+
+julia> downDomain(mat, 2)
+CartesianIndices((2, 3))
+```
+
+See also: `CartesianIndices`
 """
 function downDomain(array::Matrix{Int}, len::Int)
     return CartesianIndices(array)[1:end-len+1, :]
 end
 
+"""
+    diagDomain(array::Matrix{Int}, len::Int)
+
+Calculate the availabe indices that yield an directed chunk.
+
+# Examples
+```jldoctest
+julia> mat = permutedims(reshape(1:9, (3,3)))
+3x3 Matrix{Int64}:
+ 1  2  3
+ 4  5  6
+ 7  8  9
+
+julia> diagDomain(mat, 2)
+CartesianIndices((2, 2))
+```
+
+See also: `CartesianIndices`
+"""
+function diagDomain(array::Matrix{Int}, len::Int)
+    return CartesianIndices(array)[1:end-len+1, 1:end-len+1]
+end
+
+"""
+    rightPartition(array::Matrix{Int}, chunkSize::Int)
+
+Partitions the matrix into directed chunks.
+
+# Examples
+```jldoctest
+julia> mat = permutedims(reshape(1:9, (3,3)))
+3x3 Matrix{Int64}:
+ 1  2  3
+ 4  5  6
+ 7  8  9
+
+julia> rightPartition(mat, 2)
+3×2 Matrix{Vector{Int64}}:
+ [1, 2]  [2, 3]
+ [4, 5]  [5, 6]
+ [7, 8]  [8, 9]
+```
+
+See also: `rightDomain`
+"""
 function rightPartition(array::Matrix{Int}, chunkSize::Int)
     return [rightChunk(array, chunkIndex, chunkSize) for chunkIndex in rightDomain(array, chunkSize)]
 end
 
+"""
+    downPartition(array::Matrix{Int}, chunkSize::Int)
+
+Partitions the matrix into directed chunks.
+
+# Examples
+```jldoctest
+julia> mat = permutedims(reshape(1:9, (3,3)))
+3x3 Matrix{Int64}:
+ 1  2  3
+ 4  5  6
+ 7  8  9
+
+julia> downPartition(mat, 2)
+2×3 Matrix{Vector{Int64}}:
+ [1, 4]  [2, 5]  [3, 6]
+ [4, 7]  [5, 8]  [6, 9]
+```
+
+See also: `downDomain`
+"""
 function downPartition(array::Matrix{Int}, chunkSize::Int)
     return [downChunk(array, chunkIndex, chunkSize) for chunkIndex in downDomain(array, chunkSize)]
 end
 
+"""
+    diagPartition(array::Matrix{Int}, chunkSize::Int)
+
+Partitions the matrix into directed chunks.
+
+# Examples
+```jldoctest
+julia> mat = permutedims(reshape(1:9, (3,3)))
+3x3 Matrix{Int64}:
+ 1  2  3
+ 4  5  6
+ 7  8  9
+
+julia> diagPartition(mat, 2)
+2×2 Matrix{Vector{Int64}}:
+ [1, 5]  [2, 6]
+ [4, 8]  [5, 9]
+```
+
+See also: `diagDomain`
+"""
 function diagPartition(array::Matrix{Int}, chunkSize::Int)
     return [diagChunk(array, chunkIndex, chunkSize) for chunkIndex in diagDomain(array, chunkSize)]
 end
