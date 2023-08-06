@@ -10,13 +10,21 @@ function triangleNumber(n::Int)
     return sum(1:n)
 end
 
-function nFactors(n::Int)
-    sum((-1)^(k + 1) * (nFactors(n - (3k^2 - k)/2) + nFactors(n - (3k^2 + k)/2)) for k in 1:Inf)
+function nDivs(n::Int)
+    return length(divisors(n))
 end
 
-n = 1
-while length(divisors(triangleNumber(n))) <= 500
-    global n += 1
+function main()
+    # initialize loop
+    n = 1
+    tN = triangleNumber(n)
+    # execute loop
+    println("Searching...")
+    while nDivs(tN) <= 500
+        n += 1
+        tN = triangleNumber(n)
+    end
+    println("Solution found! $tN")
 end
 
-println(n)
+main()
